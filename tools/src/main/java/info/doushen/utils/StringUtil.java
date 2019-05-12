@@ -15,4 +15,11 @@ public class StringUtil {
         return false;
     }
 
+    public static boolean equals(String s1, String s2) {
+        if (null == s1 || null == s2) {
+            return false;
+        }
+        return s1.equals(s2);
+    }
+
 }
