@@ -47,8 +47,6 @@ public class ToolsFrame extends JFrame {
     JPanel lyricPanel;
     JLabel singerLabel = new JLabel("歌手：");
     JTextField singerText = new JTextField();
-    JLabel albumLabel = new JLabel("专辑：");
-    JTextField albumText = new JTextField();
     JLabel urlLabel = new JLabel("Lyric网址：");
     JTextField urlText = new JTextField();
     JLabel lyricPathLabel = new JLabel("下载目录：");
@@ -158,23 +156,18 @@ public class ToolsFrame extends JFrame {
         singerText.setFont(TOOLS_FONT);
         singerText.setBounds(140, 20, 350, 35);
 
-        albumLabel.setFont(TOOLS_FONT);
-        albumLabel.setBounds(10, 60, 120, 35);
-        albumText.setFont(TOOLS_FONT);
-        albumText.setBounds(140, 60, 350, 35);
-
         urlLabel.setFont(TOOLS_FONT);
-        urlLabel.setBounds(10, 100, 120, 35);
+        urlLabel.setBounds(10, 60, 120, 35);
         urlText.setFont(TOOLS_FONT);
-        urlText.setBounds(140, 100, 350, 35);
+        urlText.setBounds(140, 60, 350, 35);
 
         lyricPathLabel.setFont(TOOLS_FONT);
-        lyricPathLabel.setBounds(10, 140, 120, 35);
+        lyricPathLabel.setBounds(10, 100, 120, 35);
         lyricPathText.setFont(TOOLS_FONT);
-        lyricPathText.setBounds(140, 140, 350, 35);
+        lyricPathText.setBounds(140, 100, 350, 35);
 
         lyricBrowseBtn.setFont(TOOLS_FONT);
-        lyricBrowseBtn.setBounds(500, 140, 80, 35);
+        lyricBrowseBtn.setBounds(500, 100, 80, 35);
 
         lyricBrowseBtn.addActionListener(e -> {
             File file = openChoseWindow(JFileChooser.DIRECTORIES_ONLY);
@@ -186,18 +179,12 @@ public class ToolsFrame extends JFrame {
         });
 
         downloadBtn.setFont(TOOLS_FONT);
-        downloadBtn.setBounds(590, 140, 80, 35);
+        downloadBtn.setBounds(590, 100, 80, 35);
 
         downloadBtn.addActionListener(e -> {
             String singer = singerText.getText();
             if (StringUtil.isEmpty(singer)) {
                 popWindow("请填写歌手", LYRIC_DOWNLOAD, JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            String album = albumText.getText();
-            if (StringUtil.isEmpty(album)) {
-                popWindow("请填写歌手专辑", LYRIC_DOWNLOAD, JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -208,18 +195,16 @@ public class ToolsFrame extends JFrame {
             }
 
             String lyricPath = lyricPathText.getText();
-            if (StringUtil.isEmpty(lyricPath)) {
+            /*if (StringUtil.isEmpty(lyricPath)) {
                 popWindow("请选择歌词下载路径", LYRIC_DOWNLOAD, JOptionPane.WARNING_MESSAGE);
                 return;
-            }
+            }*/
 
-            LyricSpider.doSpider(lyricPath, singer, album, lyricUrl);
+            LyricSpider.doSpider(lyricPath, singer, lyricUrl);
         });
 
         lyricPanel.add(singerLabel);
         lyricPanel.add(singerText);
-        lyricPanel.add(albumLabel);
-        lyricPanel.add(albumText);
         lyricPanel.add(urlLabel);
         lyricPanel.add(urlText);
         lyricPanel.add(lyricPathLabel);

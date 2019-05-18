@@ -19,9 +19,9 @@ import java.nio.file.Paths;
  */
 public class LyricSpider {
 
-    public static void doSpider(String dirPath, String singer, String album, String albumUrl) {
+    public static void doSpider(String dirPath, String singer, String albumUrl) {
         try {
-            Document albumDocument = Jsoup.connect(albumUrl)
+            Document artistPage = Jsoup.connect(albumUrl)
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true)
                     .timeout(1000 * 30)
@@ -30,7 +30,36 @@ public class LyricSpider {
                     .header("accept-encoding","gzip, deflate, br")
                     .header("accept-language","zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7")
                     .get();
-            
+
+            Elements songList = artistPage.select("#listAlbum a");
+
+
+            for (Element em : songList) {
+                String songName = em.text();
+
+                String lyricLink = em.attr("href");
+                Document lyricDocument = Jsoup.connect("https://www.azlyrics.com" + lyricLink.replace("..", "")).get();
+
+
+                Element ringtone = lyricDocument.selectFirst(".ringtone");
+                Elements sameDiv = ringtone.parent().select("div");
+
+                boolean flg = false;
+                for (Element el : sameDiv) {
+                    if (el.hasClass("ringtone")) {
+                        flg = true;
+                    }
+                    if (flg) {
+                        String txt = el.html();
+                        System.out.println(songName + "==" + txt);
+                        break;
+                    }
+                }
+
+            }
+
+
+            /*
             Elements albumElements = albumDocument.select("a[href]");
 
             for (Element albumElement : albumElements) {
@@ -49,20 +78,22 @@ public class LyricSpider {
                     String song = lyricLink.substring(lyricLink.lastIndexOf("/") + 1);
 
                     if (lyric.length() > 0) {
-                        writeLyric(dirPath, singer, album, song, lyric.toString());
+                        writeLyric(dirPath, singer, song, lyric.toString());
                     }
                     Thread.sleep(3000);
                 }
             }
 
+             */
+
         } catch (IOException e) {
 
-        } catch (InterruptedException e) {
+        }/* catch (InterruptedException e) {
 
-        }
+        }*/
     }
 
-    public static void writeLyric(String dirPath, String singer, String album, String song, String lyrics) {
+    public static void writeLyric(String dirPath, String singer, String song, String lyrics) {
 
         Path lyricRoot = Paths.get(dirPath);
         if (!Files.exists(lyricRoot)) {
@@ -82,7 +113,7 @@ public class LyricSpider {
             }
         }
 
-        Path albumDir = Paths.get(dirPath + "\\" + singer + "\\" + album);
+        Path albumDir = Paths.get(dirPath + "\\" + singer);
         if (!Files.exists(albumDir)) {
             try {
                 Files.createDirectory(albumDir);
@@ -91,7 +122,7 @@ public class LyricSpider {
             }
         }
 
-        Path lyric = Paths.get(dirPath + "\\" + singer + "\\" + album + "\\" + song + ".txt");
+        Path lyric = Paths.get(dirPath + "\\" + singer + "\\" + song + ".txt");
 
         if(!Files.exists(lyric)) {
             try {

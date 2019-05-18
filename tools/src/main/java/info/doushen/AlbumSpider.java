@@ -1,6 +1,5 @@
 package info.doushen;
 
-import info.doushen.music.Album;
 import info.doushen.utils.DateUtil;
 import info.doushen.utils.SpiderUtil;
 import info.doushen.utils.StringUtil;
@@ -9,13 +8,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -66,15 +64,18 @@ public class AlbumSpider {
                     if (StringUtil.equals(ISSUE_DATE, td.text())) {
                         Element issueDate = td.parent().selectFirst("td:eq(1)");
 
-                        String path = albumPath + "\\" + DateUtil.formatChDate(issueDate.text()) + " [" + title.text() + "]";
+                        String path = albumPath + File.separator + DateUtil.formatChDate(issueDate.text()) + " [" + title.text() + "]";
 
+                        /*
                         if (path.indexOf("\\?") >= 0) {
                             path.replace("\\?", "？");
                         }
+                         */
 
                         Path albumDir = Paths.get(path);
                         if (!Files.exists(albumDir)) {
                             try {
+                                System.out.println("album==" + albumDir);
                                 Files.createDirectory(albumDir);
                             } catch (IOException e) {
 
@@ -136,7 +137,7 @@ public class AlbumSpider {
     }
 
     public static void main(String[] args) {
-        doSpider("D:\\陈奕迅", "https://emumo.xiami.com/artist/album-O9fc383?spm=0.0.0.0.wsQ7uE&p=&d=&c=Cd");
+        doSpider("/Volumes/Macintosh HD/doudou/music", "https://emumo.xiami.com/artist/album-O9fc383?spm=0.0.0.0.wsQ7uE&p=&d=&c=Cd");
     }
 
 }
