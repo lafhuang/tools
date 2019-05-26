@@ -46,13 +46,13 @@ public class LyricSpider {
 
                 boolean flg = false;
                 for (Element el : sameDiv) {
-                    if (el.hasClass("ringtone")) {
-                        flg = true;
-                    }
                     if (flg) {
                         String txt = el.html();
                         System.out.println(songName + "==" + txt);
                         break;
+                    }
+                    if (el.hasClass("ringtone")) {
+                        flg = true;
                     }
                 }
 
@@ -86,8 +86,8 @@ public class LyricSpider {
 
              */
 
-        } catch (IOException e) {
-
+        } catch (Exception e) {
+            e.printStackTrace();
         }/* catch (InterruptedException e) {
 
         }*/
