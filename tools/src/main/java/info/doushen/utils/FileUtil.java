@@ -2,6 +2,10 @@ package info.doushen.utils;
 
 import com.hankcs.hanlp.HanLP;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
@@ -13,6 +17,7 @@ import org.jaudiotagger.tag.datatype.Artwork;
 import org.jaudiotagger.tag.flac.FlacTag;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -31,9 +36,12 @@ public class FileUtil {
 
     public static void main(String[] args) {
 
-        String path = "/Volumes/Music";
+        String path = "/Volumes/Music/music";
+        String exportPath = "/Volumes/Music";
 
-        printAndConvert(path, PRINT);
+         printAndConvert(path, CONVERT);
+
+//        exportMusic(path, exportPath);
     }
 
     private static void printAndConvert(String path, String opr) {
@@ -73,38 +81,6 @@ public class FileUtil {
         } catch (Exception e) {
 
         }
-
-        /*
-        File successFile = new File("/Volumes/Macintosh HD/doudou/success.txt");
-        File errorFile = new File("/Volumes/Macintosh HD/doudou/error.txt");
-
-        FileOutputStream fos = null;
-        try {
-
-            fos = new FileOutputStream(successFile, true);
-            FileChannel fc = fos.getChannel();
-
-            ByteBuffer bbf = ByteBuffer.wrap(bytes);
-            bbf.put(bytes);
-            bbf.flip();
-            fc.write(bbf);
-
-            fc.close();
-            fos.flush();
-        } catch (Exception e) {
-
-        } finally {
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (Exception e) {
-
-                }
-            }
-        }
-
-         */
-
 
     }
 
@@ -224,6 +200,7 @@ public class FileUtil {
     }
 
     private static void printFlacAttr(List<String> flacFilePathList) throws TagException, ReadOnlyFileException, CannotReadException, InvalidAudioFrameException, IOException {
+        System.out.println("=========================================================");
         for (String flacFilePath : flacFilePathList) {
             FlacFileReader flacFileReader = new FlacFileReader();
             File file = new File(flacFilePath);
@@ -232,6 +209,7 @@ public class FileUtil {
 
             FlacTag tag = (FlacTag) flacFile.getTag();
 
+            /*
             System.out.println("VENDOR===" + tag.getFirst("VENDOR") + "===");
             System.out.println("ALBUM===" + tag.getFirst("ALBUM") + "===");
             System.out.println("ALBUMARTIST===" + tag.getFirst("ALBUMARTIST") + "===");
@@ -242,8 +220,91 @@ public class FileUtil {
             System.out.println("TITLE===" + tag.getFirst("TITLE") + "===");
             System.out.println("TRACKTOTAL===" + tag.getFirst("TRACKTOTAL") + "===");
             System.out.println("TRACKNUMBER===" + tag.getFirst("TRACKNUMBER") + "===");
+            */
 
-            System.out.println("=========================================================");
+            if (StringUtil.isEmpty(tag.getFirst("TRACKNUMBER"))) {
+                System.out.println(flacFilePath);
+            }
+
+        }
+        System.out.println("=========================================================");
+
+    }
+
+    private static void exportMusic(String path, String exportPath) {
+        Path musicPath = Paths.get(path);
+        List<String> flacList = new LinkedList<>();
+        try {
+            Files.walkFileTree(musicPath, new FlacVisitor(flacList));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        XSSFWorkbook book = new XSSFWorkbook();
+        XSSFSheet flacSheet = book.createSheet("flac");
+        XSSFRow head = flacSheet.createRow(0);
+        XSSFCell headArtist = head.createCell(0);
+        headArtist.setCellValue("歌手");
+        XSSFCell headAlbum = head.createCell(1);
+        headAlbum.setCellValue("专辑");
+        XSSFCell headSong = head.createCell(2);
+        headSong.setCellValue("歌曲名");
+
+        for (int idx = 1; idx < flacList.size(); idx++) {
+            String flac = flacList.get(idx);
+
+            String[] flacMeta = flac.split(File.separator);
+            XSSFRow row = flacSheet.createRow(idx);
+
+            String artistName = flacMeta[flacMeta.length - 3];
+            XSSFCell artistCell = row.createCell(0);
+            artistCell.setCellValue(artistName);
+
+            String albumName = flacMeta[flacMeta.length - 2];
+            if (albumName.contains("[")) {
+                albumName = albumName.substring(albumName.indexOf("[") + 1, albumName.indexOf("]"));
+            }
+            XSSFCell albumCell = row.createCell(1);
+            albumCell.setCellValue(albumName);
+
+            String songName = flacMeta[flacMeta.length - 1];
+            XSSFCell songCell = row.createCell(2);
+            songCell.setCellValue(songName);
+
+            if (songName.contains("[")) {
+                boolean flg = false;
+                if (songName.contains("[]")) {
+                    flg = true;
+                } else {
+                    String track = songName.substring(songName.indexOf("[") + 1, songName.indexOf("]"));
+                    if (songName.replace("["+track+"]", "").contains(track)) {
+                        flg = true;
+                    }
+                }
+
+                if (flg) {
+                    XSSFCell cell = row.createCell(3);
+                    cell.setCellValue(songName);
+                }
+            }
+
+        }
+
+        FileOutputStream out = null;
+
+        try {
+            out = new FileOutputStream(exportPath + File.separator + "flac.xlsx");
+            book.write(out);
+        } catch (Exception e) {
+
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+
+                }
+            }
         }
 
     }
