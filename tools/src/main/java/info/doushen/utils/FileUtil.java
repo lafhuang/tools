@@ -1,13 +1,13 @@
 package info.doushen.utils;
 
 import com.hankcs.hanlp.HanLP;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.CannotWriteException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.audio.flac.FlacFileReader;
@@ -21,180 +21,153 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
+/**
+ * @author huangdou
+ */
 public class FileUtil {
 
     private static final String PRINT = "print";
     private static final String TAG = "tag";
     private static final String CONVERT = "convert";
+    private static final String FLAC = "flac";
+    private static final String FLAC_UP = "FLAC";
+    private static final String DSF = "dsf";
+    private static final String DSF_UP = "dsf";
 
-    static List<String> dsfList = new ArrayList<>();
-    static List<String> errorList = new ArrayList<>();
+    public static void main(String[] args) throws ReadOnlyFileException, CannotReadException, TagException, InvalidAudioFrameException, IOException, CannotWriteException {
 
-    public static void main(String[] args) {
+        String path = "E:\\music";
+//        String exportPath = "D:\\";
 
-        String path = "/Volumes/Music/music";
-        String exportPath = "/Volumes/Music";
-
-         printAndConvert(path, CONVERT);
+        printAndConvert(path, CONVERT);
 
 //        exportMusic(path, exportPath);
     }
 
-    private static void printAndConvert(String path, String opr) {
+    /**
+     * 转换flac
+     *
+     * @param path
+     * @param opr
+     * @throws IOException
+     * @throws ReadOnlyFileException
+     * @throws TagException
+     * @throws InvalidAudioFrameException
+     * @throws CannotReadException
+     * @throws CannotWriteException
+     */
+    private static void printAndConvert(String path, String opr) throws IOException, ReadOnlyFileException, TagException, InvalidAudioFrameException, CannotReadException, CannotWriteException {
         Path startingDir = Paths.get(path);
         List<String> flacFilePathList = new LinkedList<>();
-        try {
-            Files.walkFileTree(startingDir, new FlacVisitor(flacFilePathList));
+        Files.walkFileTree(startingDir, new FlacVisitor(flacFilePathList));
 
-            if (CollectionUtils.isNotEmpty(errorList)) {
-                System.out.println("===============error start================");
-                for (String error : errorList) {
-                    System.out.println(error);
-                }
-                System.out.println("===============error end================");
+        if (StringUtil.equals(TAG, opr)) {
+            printFlacAttr(flacFilePathList);
+        } else if (StringUtil.equals(CONVERT, opr)) {
+            convertAndRename(flacFilePathList);
+        } if (StringUtil.equals(PRINT, opr)) {
+            System.out.println("===============file start================");
+            for (String name : flacFilePathList) {
+                System.out.println(name.replace(path, ""));
             }
-
-            if (StringUtil.equals(TAG, opr)) {
-                printFlacAttr(flacFilePathList);
-            } else if (StringUtil.equals(CONVERT, opr)) {
-                convertAndRename(flacFilePathList);
-
-                if (CollectionUtils.isNotEmpty(dsfList)) {
-                    System.out.println("===============error start================");
-                    for (String dsf : dsfList) {
-                        System.out.println(dsf);
-                    }
-                    System.out.println("===============error end================");
-                }
-            } if (StringUtil.equals(PRINT, opr)) {
-                System.out.println("===============file start================");
-                for (String name : flacFilePathList) {
-                    System.out.println(name.replace(path, ""));
-                }
-                System.out.println("===============file end================");
-            }
-
-        } catch (Exception e) {
-
+            System.out.println("===============file end================");
         }
-
     }
 
-    private static void convertAndRename(List<String> flacFilePathList)  {
+    private static void convertAndRename(List<String> flacFilePathList) throws TagException, ReadOnlyFileException, CannotReadException, InvalidAudioFrameException, IOException, CannotWriteException {
         for (String flacFilePath : flacFilePathList) {
             FlacFileReader flacFileReader = new FlacFileReader();
             File file = new File(flacFilePath);
 
-            String parentPath = file.getParent();
+            String parent = file.getParent();
 
-            String albumPath = parentPath.substring(parentPath.lastIndexOf(File.separator) + 1);
-
-            String artist = parentPath.substring(0, parentPath.lastIndexOf(File.separator));
+            String artist = parent.substring(0, parent.lastIndexOf(File.separator));
             artist = artist.substring(artist.lastIndexOf(File.separator) + 1);
-            albumPath = parentPath.substring(parentPath.lastIndexOf(File.separator) + 1);
-            String album = albumPath.substring(albumPath.indexOf(" ") + 2, albumPath.length() - 1);
-            String date = albumPath.substring(0, albumPath.indexOf(" "));
+
+            String album = parent.substring(parent.lastIndexOf(File.separator) + 1);
+
+            String date = album.substring(0, album.indexOf(" "));
+            album = album.substring(album.indexOf(" ") + 2, album.length() - 1);
 
             int trackTotal = 0;
-            File parent = new File(parentPath);
+            File parentFolder = new File(parent);
 
-            String[] subFiles = parent.list();
+            String[] subFiles = parentFolder.list();
+            assert subFiles != null;
             for (String subFile : subFiles) {
-                if (subFile.endsWith("flac")) {
+                if (subFile.endsWith(FLAC)) {
                     trackTotal ++;
                 }
             }
 
-            AudioFile flacFile = null;
-
-            try {
-                flacFile = flacFileReader.read(file);
-            } catch (Exception e) {
-                System.out.println(flacFilePath + "====读取flac失败");
-                errorList.add(flacFilePath);
-            }
+            AudioFile flacFile = flacFileReader.read(file);
 
             FlacTag tag = (FlacTag) flacFile.getTag();
 
             String title = HanLP.convertToSimplifiedChinese(tag.getFirst("TITLE")).replace("（", "(").replace("）",")");
             String trackIdx = tag.getFirst("TRACKNUMBER");
-            int trackNum = 0;
-            if (trackIdx.indexOf("/") >= 0) {
+            int trackNum;
+            if (trackIdx.contains("/")) {
                 trackNum = Integer.parseInt(trackIdx.substring(0, trackIdx.indexOf("/")));
             } else {
                 trackNum = Integer.parseInt(trackIdx);
             }
 
-            try {
-                tag.setField("VENDOR", "");
-                tag.setField("ALBUM", album);
-                tag.setField("ALBUMARTIST", artist);
-                tag.setField("ARTIST", artist);
-                tag.setField("COMMENT", "huangdou flac");
-                tag.setField("DATE", date);
-                tag.setField("GENRE", tag.getFirst("GENRE"));
-                tag.setField("TITLE", title);
-                tag.setField("TRACKTOTAL", String.valueOf(trackTotal));
-                tag.setField("TRACKNUMBER", trackNum+"");
-            } catch (Exception e) {
-                System.out.println(flacFilePath + "====设置tag失败");
-                errorList.add(flacFilePath);
-            }
+            tag.setField("VENDOR", "");
+            tag.setField("ALBUM", album);
+            tag.setField("ALBUMARTIST", artist);
+            tag.setField("ARTIST", artist);
+            tag.setField("COMMENT", "huangdou flac");
+            tag.setField("DATE", date);
+            tag.setField("GENRE", tag.getFirst("GENRE"));
+            tag.setField("TITLE", title);
+            tag.setField("TRACKTOTAL", String.valueOf(trackTotal));
+            tag.setField("TRACKNUMBER", String.valueOf(trackNum));
 
             Artwork artwork = new Artwork();
-            File cover = new File(parentPath + File.separator + "cover.jpg");
+            File cover = new File(parent + File.separator + "cover.jpg");
 
-            try {
-                artwork.setFromFile(cover);
-                tag.setField(artwork);
-            } catch (Exception e) {
-                System.out.println(flacFilePath + "====设置封面失败");
-                errorList.add(flacFilePath);
-            }
+            artwork.setFromFile(cover);
+            tag.setField(artwork);
 
             flacFile.setTag(tag);
 
             FlacFileWriter flacFileWriter = new FlacFileWriter();
-            try {
-                flacFileWriter.write(flacFile);
-            } catch (Exception e) {
-                System.out.println(flacFilePath + "====写入tag失败");
-                errorList.add(flacFilePath);
-            }
+            flacFileWriter.write(flacFile);
 
-            String simpleFileName = parentPath + File.separator + "[" + (trackNum > 9 ? trackNum : "0" + trackNum) + "] " + title + ".flac";
+            String simpleFileName = parent + File.separator + "[" + (trackNum > 9 ? trackNum : "0" + trackNum) + "] " + title + ".flac";
 
             File simpleFile = new File(HanLP.convertToSimplifiedChinese(simpleFileName));
-            try {
-                file.renameTo(simpleFile);
-            } catch (Exception e) {
-                System.out.println("=======" + simpleFileName);
-                errorList.add(flacFilePath);
-            }
-
+            boolean rename = file.renameTo(simpleFile);
+            System.out.println(flacFilePath + "===重命名===" + rename);
         }
 
     }
 
     private static class FlacVisitor extends SimpleFileVisitor<Path> {
-        private List<String> result = new LinkedList<>();
+        private List<String> result;
 
-        public FlacVisitor(List<String> result) {
+        FlacVisitor(List<String> result) {
             this.result = result;
         }
 
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             String fileName = file.toString();
-            if (fileName.endsWith(".flac")) {
+            if (fileName.endsWith(FLAC) || fileName.endsWith(FLAC_UP)) {
                 result.add(fileName);
-            } else if(fileName.endsWith("dsf")) {
-                dsfList.add(fileName);
             }
+
+            /*
+            if (fileName.endsWith(DSF) || fileName.endsWith(DSF_UP)) {
+                result.add(fileName);
+            }
+
+             */
             return FileVisitResult.CONTINUE;
         }
     }
@@ -231,14 +204,10 @@ public class FileUtil {
 
     }
 
-    private static void exportMusic(String path, String exportPath) {
+    private static void exportMusic(String path, String exportPath) throws IOException {
         Path musicPath = Paths.get(path);
         List<String> flacList = new LinkedList<>();
-        try {
-            Files.walkFileTree(musicPath, new FlacVisitor(flacList));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Files.walkFileTree(musicPath, new FlacVisitor(flacList));
 
         XSSFWorkbook book = new XSSFWorkbook();
         XSSFSheet flacSheet = book.createSheet("flac");
@@ -249,12 +218,23 @@ public class FileUtil {
         headAlbum.setCellValue("专辑");
         XSSFCell headSong = head.createCell(2);
         headSong.setCellValue("歌曲名");
+        XSSFCell unStand = head.createCell(3);
+        unStand.setCellValue("非标准歌曲名");
 
-        for (int idx = 1; idx < flacList.size(); idx++) {
+        Properties props = System.getProperties();
+        String osName = props.getProperty("os.name");
+
+        System.out.println(osName);
+
+        String operate = File.separator;
+        if (osName.contains("Windows")) {
+            operate = "\\\\";
+        }
+
+        for (int idx = 0; idx < flacList.size(); idx++) {
             String flac = flacList.get(idx);
-
-            String[] flacMeta = flac.split(File.separator);
-            XSSFRow row = flacSheet.createRow(idx);
+            String[] flacMeta = flac.split(operate);
+            XSSFRow row = flacSheet.createRow(idx+1);
 
             String artistName = flacMeta[flacMeta.length - 3];
             XSSFCell artistCell = row.createCell(0);
@@ -290,22 +270,9 @@ public class FileUtil {
 
         }
 
-        FileOutputStream out = null;
-
-        try {
-            out = new FileOutputStream(exportPath + File.separator + "flac.xlsx");
-            book.write(out);
-        } catch (Exception e) {
-
-        } finally {
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-
-                }
-            }
-        }
+        FileOutputStream out = new FileOutputStream(exportPath + File.separator + "flac.xlsx");
+        book.write(out);
+        out.close();
 
     }
 
