@@ -40,8 +40,8 @@ public class FileUtil {
 
     public static void main(String[] args) throws ReadOnlyFileException, CannotReadException, TagException, InvalidAudioFrameException, IOException, CannotWriteException {
 
-        String path = "E:\\music";
-//        String exportPath = "D:\\";
+        String path = "D:\\music\\田馥甄";
+        String exportPath = "D:\\";
 
         printAndConvert(path, CONVERT);
 
@@ -89,9 +89,15 @@ public class FileUtil {
             artist = artist.substring(artist.lastIndexOf(File.separator) + 1);
 
             String album = parent.substring(parent.lastIndexOf(File.separator) + 1);
+            if (album.startsWith("EP ")) {
+                album.replace("EP ", "");
+            }
 
-            String date = album.substring(0, album.indexOf(" "));
-            album = album.substring(album.indexOf(" ") + 2, album.length() - 1);
+            String date = "";
+            if (album.contains(" ")) {
+                date = album.substring(0, album.indexOf(" "));
+                album = album.substring(album.indexOf(" ") + 2, album.length() - 1);
+            }
 
             int trackTotal = 0;
             File parentFolder = new File(parent);
@@ -204,7 +210,7 @@ public class FileUtil {
 
     }
 
-    private static void exportMusic(String path, String exportPath) throws IOException {
+    private static void exportMusic(String path, String exportPath) throws IOException, TagException, ReadOnlyFileException, CannotReadException, InvalidAudioFrameException {
         Path musicPath = Paths.get(path);
         List<String> flacList = new LinkedList<>();
         Files.walkFileTree(musicPath, new FlacVisitor(flacList));
@@ -221,6 +227,27 @@ public class FileUtil {
         XSSFCell unStand = head.createCell(3);
         unStand.setCellValue("非标准歌曲名");
 
+        XSSFCell tagHeadCell = head.createCell(4);
+        tagHeadCell.setCellValue("VENDOR");
+        tagHeadCell = head.createCell(5);
+        tagHeadCell.setCellValue("ALBUM");
+        tagHeadCell = head.createCell(6);
+        tagHeadCell.setCellValue("ALBUMARTIST");
+        tagHeadCell = head.createCell(7);
+        tagHeadCell.setCellValue("ARTIST");
+        tagHeadCell = head.createCell(8);
+        tagHeadCell.setCellValue("COMMENT");
+        tagHeadCell = head.createCell(9);
+        tagHeadCell.setCellValue("DATE");
+        tagHeadCell = head.createCell(10);
+        tagHeadCell.setCellValue("GENRE");
+        tagHeadCell = head.createCell(11);
+        tagHeadCell.setCellValue("TITLE");
+        tagHeadCell = head.createCell(12);
+        tagHeadCell.setCellValue("TRACKTOTAL");
+        tagHeadCell = head.createCell(13);
+        tagHeadCell.setCellValue("TRACKNUMBER");
+
         Properties props = System.getProperties();
         String osName = props.getProperty("os.name");
 
@@ -230,6 +257,8 @@ public class FileUtil {
         if (osName.contains("Windows")) {
             operate = "\\\\";
         }
+
+        FlacFileReader flacReader = new FlacFileReader();
 
         for (int idx = 0; idx < flacList.size(); idx++) {
             String flac = flacList.get(idx);
@@ -268,9 +297,33 @@ public class FileUtil {
                 }
             }
 
+            File file = new File(flac);
+            AudioFile audioFile = flacReader.read(file);
+            FlacTag tag = (FlacTag) audioFile.getTag();
+
+            XSSFCell tagCell = row.createCell(4);
+            tagCell.setCellValue(tag.getFirst("VENDOR"));
+            tagCell = row.createCell(5);
+            tagCell.setCellValue(tag.getFirst("ALBUM"));
+            tagCell = row.createCell(6);
+            tagCell.setCellValue(tag.getFirst("ALBUMARTIST"));
+            tagCell = row.createCell(7);
+            tagCell.setCellValue(tag.getFirst("ARTIST"));
+            tagCell = row.createCell(8);
+            tagCell.setCellValue(tag.getFirst("COMMENT"));
+            tagCell = row.createCell(9);
+            tagCell.setCellValue(tag.getFirst("DATE"));
+            tagCell = row.createCell(10);
+            tagCell.setCellValue(tag.getFirst("GENRE"));
+            tagCell = row.createCell(11);
+            tagCell.setCellValue(tag.getFirst("TITLE"));
+            tagCell = row.createCell(12);
+            tagCell.setCellValue(tag.getFirst("TRACKTOTAL"));
+            tagCell = row.createCell(13);
+            tagCell.setCellValue(tag.getFirst("TRACKNUMBER"));
         }
 
-        FileOutputStream out = new FileOutputStream(exportPath + File.separator + "flac.xlsx");
+        FileOutputStream out = new FileOutputStream(exportPath + File.separator + "music.xlsx");
         book.write(out);
         out.close();
 
