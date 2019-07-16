@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import java.util.List;
 
 /**
- * Album
+ * Artist
  *
  * @author huangdou
  * @date 2019/3/12

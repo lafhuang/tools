@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * AlbumSpider
+ * Artist
  *
  * @author huangdou
  * @date 2019/5/9

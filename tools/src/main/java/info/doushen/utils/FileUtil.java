@@ -40,7 +40,7 @@ public class FileUtil {
 
     public static void main(String[] args) throws ReadOnlyFileException, CannotReadException, TagException, InvalidAudioFrameException, IOException, CannotWriteException {
 
-        String path = "D:\\music\\田馥甄";
+        String path = "E:\\music\\郑秀文\\2000-11-01 [眉飞色舞]";
         String exportPath = "D:\\";
 
         printAndConvert(path, CONVERT);
