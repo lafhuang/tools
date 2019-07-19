@@ -2,6 +2,7 @@ package info.doushen.spider.lyrics;
 
 import com.geccocrawler.gecco.annotation.PipelineName;
 import com.geccocrawler.gecco.pipeline.Pipeline;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -23,7 +24,12 @@ public class LyricsPipeline implements Pipeline<Lyrics> {
     public void process(Lyrics lyrics) {
         String artist = lyrics.getArtistName().replace(" Lyrics", "");
         String album = lyrics.getAlbumName();
-        album = album.substring(1, album.length() -1);
+        if (StringUtils.isEmpty(album)) {
+            album = "other songs";
+        } else {
+            album = album.substring(1, album.length() -1);
+        }
+
         String song = lyrics.getSongName();
         song = song.substring(1, song.length() -1);
 
@@ -31,7 +37,7 @@ public class LyricsPipeline implements Pipeline<Lyrics> {
 
         String osName = System.getProperty("os.name");
         if (osName.startsWith("Mac OS")) {
-            lyricPath = "/Volumes/L.A.F./lyrics";
+            lyricPath = "/Volumes/Macintosh HD/doudou/lyrics";
         }
 
         Path lyricRoot = Paths.get(lyricPath);
@@ -53,6 +59,18 @@ public class LyricsPipeline implements Pipeline<Lyrics> {
             }
         }
 
+        if (album.contains("\"\n\"")) {
+            String[] albums = album.split("\"\n\"");
+            for (String ab : albums) {
+                fetchLyrics(lyrics, ab, song, lyricPath);
+            }
+        } else {
+            fetchLyrics(lyrics, album, song, lyricPath);
+        }
+
+    }
+
+    private void fetchLyrics(Lyrics lyrics, String album, String song, String lyricPath) {
         lyricPath += File.separator +  album;
         Path albumDir = Paths.get(lyricPath);
         if (!Files.exists(albumDir)) {
@@ -76,7 +94,11 @@ public class LyricsPipeline implements Pipeline<Lyrics> {
         BufferedWriter writer = null;
         try {
             writer = Files.newBufferedWriter(lyric);
-            writer.write(lyrics.getLyrics().replaceFirst(" ", "").replace("<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. -->", "").replaceAll("<br> ", ""));
+            String lyricsContext = lyrics.getLyrics();
+            if (StringUtils.isEmpty(lyricsContext)) {
+                lyricsContext = lyrics.getBakLyrics();
+            }
+            writer.write(lyricsContext.replace("<!-- Usage of azlyrics.com content by any third-party lyrics provider is prohibited by our licensing agreement. Sorry about that. --> ", "").replaceAll("<br> ", ""));
             writer.flush();
         } catch (IOException e) {
 
@@ -89,7 +111,6 @@ public class LyricsPipeline implements Pipeline<Lyrics> {
                 }
             }
         }
-
     }
 
 }

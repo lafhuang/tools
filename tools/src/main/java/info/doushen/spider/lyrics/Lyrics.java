@@ -19,6 +19,9 @@ public class Lyrics implements HtmlBean {
     @HtmlField(cssPath = "body > div.container.main-page > div > div.col-xs-12.col-lg-8.text-center > div:nth-child(8)")
     private String lyrics;
 
+    @HtmlField(cssPath = "body > div.container.main-page > div > div.col-xs-12.col-lg-8.text-center > div:nth-child(10)")
+    private String bakLyrics;
+
     @HtmlField(cssPath = "body > div.container.main-page > div > div.col-xs-12.col-lg-8.text-center > div.lyricsh > h2 > b")
     private String artistName;
 
